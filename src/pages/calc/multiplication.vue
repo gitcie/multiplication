@@ -41,6 +41,28 @@
             </span>
             
             <div class="button" @click="submit">计算</div>
+
+            <el-table
+                style="width: 100%;"
+                :data="recentAttempts">
+                <el-table-column
+                    prop="id"
+                    label="AttemptId"
+                />
+                <el-table-column
+                    prop="multiFactors"
+                    label="因子"
+                />
+                <el-table-column
+                    prop="enterResult"
+                    label="输入结果"
+                />
+                <el-table-column
+                    prop="correct"
+                    label="是否正确"
+                />
+                
+            </el-table>
             
         </div>
     </div>
@@ -49,8 +71,12 @@
 <script>
     
     import {
-        getRandomFactors, postResult
+        getRandomFactors, postResult, getUserRecentAttempts
     } from '#/multiplication.js'
+
+    import Vue from 'vue'
+    import { Table, TableColumn} from 'element-ui'
+    Vue.use(Table).use(TableColumn)
 
     export default {
         data(){
@@ -58,10 +84,11 @@
                 factorA: 0,
                 factorB: 0,
                 resultAttempt: null,
-                alias: null,
+                alias: 'lusiyi',
                 checked: false,
                 correctResult: null,
-                correct: false
+                correct: false,
+                recentAttempts: null
             }
         },
 
@@ -80,6 +107,7 @@
 
         mounted(){
             this.loadMultiplicationFactors()
+            this.updateRecentAttempts(this.alias)
         },
 
         methods: {
@@ -117,9 +145,29 @@
                         this.correctResult = resp.data.multiplication.result
                         this.checked = true
                         this.correct = resp.data.correct
+                        this.updateRecentAttempts(this.alias)
                     })
                     .catch(err => {
                         console.log(err)
+                    })
+            },
+
+            updateRecentAttempts(alias){
+                getUserRecentAttempts(alias)
+                    .then(resp => {
+                        console.log(`最近尝试：${JSON.stringify(resp.data, null, 4)}`)
+                        this.recentAttempts = resp.data.map(item =>{
+                            return {
+                                id: item.id,
+                                multiFactors: `${item.multiplication.factorA}×${item.multiplication.factorB}`,
+                                enterResult: item.resultAttempt,
+                                correct: item.correct ? "正确" : "错误"
+                            }
+                        })
+                        console.log(`重构数据：${JSON.stringify(this.recentAttempts, null, 4)}`)
+                    })
+                    .catch(err => {
+
                     })
             }
         }
@@ -129,7 +177,7 @@
 <style scoped>
     
     .page-content {
-        width: 50%;
+        width: 62%;
         height: calc(100% - 16px);
         margin: 8px auto;
         background: #eee;
